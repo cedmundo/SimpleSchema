@@ -39,6 +39,7 @@ var (
 type Lexer struct {
 	loc            Location
 	locBeforeSpace Location
+	curLoc         Location
 	current        rune
 	consumed       bool
 	reader         io.RuneReader
@@ -53,6 +54,7 @@ func New(file string, reader io.RuneReader) *Lexer {
 	return &Lexer{
 		loc:            loc,
 		locBeforeSpace: loc,
+		curLoc:         loc,
 		reader:         reader,
 	}
 }
@@ -66,19 +68,19 @@ func (l *Lexer) advanceRune() (err error) {
 	l.current, _, err = l.reader.ReadRune()
 	if errors.Is(err, io.EOF) {
 		l.consumed = true
-		if l.current == '\n' {
-			l.loc.Col = 0
-			l.loc.Row += 1
-		}
 		return nil
 	}
 
+	l.curLoc.Col += 1
 	l.locBeforeSpace = l.loc
 	if unicode.IsSpace(l.current) {
 		l.loc.Col += 1
 		if l.current == '\n' {
 			l.loc.Col = 0
 			l.loc.Row += 1
+
+			l.curLoc.Col = 0
+			l.curLoc.Row += 1
 		}
 	}
 	return err
@@ -96,7 +98,7 @@ func (l *Lexer) skipSpaces() error {
 
 func (l *Lexer) tryReadEOF() (Token, error) {
 	if l.consumed {
-		return Token{Tag: TokenTagEOF, Loc: l.loc}, nil
+		return Token{Tag: TokenTagEOF, Loc: l.curLoc}, nil
 	}
 
 	return Token{}, ErrInvalidCharacter
@@ -455,9 +457,8 @@ func (l *Lexer) Read() (Token, error) {
 		if err != nil && !errors.Is(err, ErrInvalidCharacter) {
 			return token, err
 		} else if err == nil {
-			if token.Tag != TokenTagEOL && token.Tag != TokenTagComment {
-				l.loc.Col += len(token.Value)
-			}
+			l.loc = l.curLoc
+			l.loc.Col -= 1
 			return token, nil
 		}
 	}
@@ -472,6 +473,7 @@ func (l *Lexer) Unread(token Token) error {
 		return ErrAlreadyUnread
 	}
 
+	l.curLoc.Col -= 1
 	l.unread = &token
 	return nil
 }

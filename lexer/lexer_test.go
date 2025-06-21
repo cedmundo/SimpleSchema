@@ -65,7 +65,7 @@ func TestLexer_SingleScans(t *testing.T) {
 			input: "0b1010",
 			expectedTokens: []lexer.Token{
 				{Tag: lexer.TokenTagBinInt, Loc: lexer.Location{File: "lex bin int", Row: 0, Col: 0}, Value: "1010"},
-				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex bin int", Row: 0, Col: 4}}, // TODO(cedmundo): This should be 6
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex bin int", Row: 0, Col: 6}},
 			},
 		},
 		{
@@ -73,7 +73,7 @@ func TestLexer_SingleScans(t *testing.T) {
 			input: "0o766",
 			expectedTokens: []lexer.Token{
 				{Tag: lexer.TokenTagOctInt, Loc: lexer.Location{File: "lex oct int", Row: 0, Col: 0}, Value: "766"},
-				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex oct int", Row: 0, Col: 3}}, // TODO(cedmundo): This should be 5
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex oct int", Row: 0, Col: 5}},
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func TestLexer_SingleScans(t *testing.T) {
 			input: "0xF0F0",
 			expectedTokens: []lexer.Token{
 				{Tag: lexer.TokenTagHexInt, Loc: lexer.Location{File: "lex hex int", Row: 0, Col: 0}, Value: "F0F0"},
-				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex hex int", Row: 0, Col: 4}}, // TODO(cedmundo): This should be 6
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex hex int", Row: 0, Col: 6}},
 			},
 		},
 		{
@@ -152,7 +152,7 @@ func TestLexer_SingleScans(t *testing.T) {
 			input: "\"\"",
 			expectedTokens: []lexer.Token{
 				{Tag: lexer.TokenTagString, Loc: lexer.Location{File: "lex empty string", Row: 0, Col: 0}, Value: ""},
-				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex empty string", Row: 0, Col: 0}}, // FIXME(cedmundo): Col should be 2
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex empty string", Row: 0, Col: 2}},
 			},
 		},
 		{
@@ -160,7 +160,7 @@ func TestLexer_SingleScans(t *testing.T) {
 			input: "\"hello\"",
 			expectedTokens: []lexer.Token{
 				{Tag: lexer.TokenTagString, Loc: lexer.Location{File: "lex non-empty string", Row: 0, Col: 0}, Value: "hello"},
-				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex non-empty string", Row: 0, Col: 5}}, // FIXME(cedmundo): Col should be 7
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex non-empty string", Row: 0, Col: 7}},
 			},
 		},
 		{
@@ -168,7 +168,7 @@ func TestLexer_SingleScans(t *testing.T) {
 			input: `"\tTABS"`,
 			expectedTokens: []lexer.Token{
 				{Tag: lexer.TokenTagString, Loc: lexer.Location{File: "lex escaped string", Row: 0, Col: 0}, Value: "\tTABS"},
-				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex escaped string", Row: 0, Col: 5}}, // FIXME(cedmundo): Col should be 7
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex escaped string", Row: 0, Col: 8}},
 			},
 		},
 		{
@@ -176,7 +176,7 @@ func TestLexer_SingleScans(t *testing.T) {
 			input: `"\xC0"`,
 			expectedTokens: []lexer.Token{
 				{Tag: lexer.TokenTagString, Loc: lexer.Location{File: "lex byte-escaped string", Row: 0, Col: 0}, Value: "\xC0"},
-				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex byte-escaped string", Row: 0, Col: 1}}, // FIXME(cedmundo): Col should be 6
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex byte-escaped string", Row: 0, Col: 6}},
 			},
 		},
 		{
@@ -184,7 +184,7 @@ func TestLexer_SingleScans(t *testing.T) {
 			input: `"\u3071"`,
 			expectedTokens: []lexer.Token{
 				{Tag: lexer.TokenTagString, Loc: lexer.Location{File: "lex unicode-escaped string", Row: 0, Col: 0}, Value: "\u3071"},
-				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex unicode-escaped string", Row: 0, Col: 3}}, // FIXME(cedmundo): Col should be 8
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex unicode-escaped string", Row: 0, Col: 8}},
 			},
 		},
 		{
@@ -192,7 +192,7 @@ func TestLexer_SingleScans(t *testing.T) {
 			input: `"\U0001F617"`,
 			expectedTokens: []lexer.Token{
 				{Tag: lexer.TokenTagString, Loc: lexer.Location{File: "lex large unicode-escaped string", Row: 0, Col: 0}, Value: "\U0001F617"},
-				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex large unicode-escaped string", Row: 0, Col: 4}}, // FIXME(cedmundo): Col should be 12
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex large unicode-escaped string", Row: 0, Col: 12}},
 			},
 		},
 		{
@@ -233,6 +233,15 @@ func TestLexer_SingleScans(t *testing.T) {
 				{Tag: lexer.TokenTagPunct, Loc: lexer.Location{File: "lex punct with juxtaposition", Row: 0, Col: 0}, Value: "+"},
 				{Tag: lexer.TokenTagPunct, Loc: lexer.Location{File: "lex punct with juxtaposition", Row: 0, Col: 1}, Value: "("},
 				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex punct with juxtaposition", Row: 0, Col: 2}},
+			},
+		},
+		{
+			name:  "lex single character word",
+			input: `a+`,
+			expectedTokens: []lexer.Token{
+				{Tag: lexer.TokenTagWord, Loc: lexer.Location{File: "lex single character word", Row: 0, Col: 0}, Value: "a"},
+				{Tag: lexer.TokenTagPunct, Loc: lexer.Location{File: "lex single character word", Row: 0, Col: 1}, Value: "+"},
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex single character word", Row: 0, Col: 2}},
 			},
 		},
 		{
