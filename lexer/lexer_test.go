@@ -245,6 +245,16 @@ func TestLexer_SingleScans(t *testing.T) {
 			},
 		},
 		{
+			name:  "lex three consecutive words",
+			input: `a b c`,
+			expectedTokens: []lexer.Token{
+				{Tag: lexer.TokenTagWord, Loc: lexer.Location{File: "lex three consecutive words", Row: 0, Col: 0}, Value: "a"},
+				{Tag: lexer.TokenTagWord, Loc: lexer.Location{File: "lex three consecutive words", Row: 0, Col: 2}, Value: "b"},
+				{Tag: lexer.TokenTagWord, Loc: lexer.Location{File: "lex three consecutive words", Row: 0, Col: 4}, Value: "c"},
+				{Tag: lexer.TokenTagEOF, Loc: lexer.Location{File: "lex three consecutive words", Row: 0, Col: 5}},
+			},
+		},
+		{
 			name:          "lex unknown symbol",
 			input:         `°`,
 			expectedError: lexer.ErrInvalidCharacter,

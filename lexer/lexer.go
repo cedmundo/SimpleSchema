@@ -37,13 +37,12 @@ var (
 
 // Lexer is responsible for converting a sequence of characters into a sequence of tokens for parser consumption.
 type Lexer struct {
-	loc            Location
-	locBeforeSpace Location
-	curLoc         Location
-	current        rune
-	consumed       bool
-	reader         io.RuneReader
-	unread         *Token
+	startLoc Location
+	endLoc   Location
+	current  rune
+	consumed bool
+	reader   io.RuneReader
+	unread   *Token
 }
 
 type tryReadFn func() (Token, error)
@@ -52,10 +51,9 @@ type tryReadFn func() (Token, error)
 func New(file string, reader io.RuneReader) *Lexer {
 	loc := Location{File: file}
 	return &Lexer{
-		loc:            loc,
-		locBeforeSpace: loc,
-		curLoc:         loc,
-		reader:         reader,
+		reader:   reader,
+		startLoc: loc,
+		endLoc:   loc,
 	}
 }
 
@@ -71,34 +69,29 @@ func (l *Lexer) advanceRune() (err error) {
 		return nil
 	}
 
-	l.curLoc.Col += 1
-	l.locBeforeSpace = l.loc
-	if unicode.IsSpace(l.current) {
-		l.loc.Col += 1
-		if l.current == '\n' {
-			l.loc.Col = 0
-			l.loc.Row += 1
-
-			l.curLoc.Col = 0
-			l.curLoc.Row += 1
-		}
+	l.endLoc.Col += 1
+	if l.current == '\n' {
+		l.endLoc.Col = 0
+		l.endLoc.Row += 1
 	}
 	return err
 }
 
 func (l *Lexer) skipSpaces() error {
 	for l.current == ' ' || l.current == '\t' {
+		l.startLoc.Col += 1
 		err := l.advanceRune()
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func (l *Lexer) tryReadEOF() (Token, error) {
 	if l.consumed {
-		return Token{Tag: TokenTagEOF, Loc: l.curLoc}, nil
+		return Token{Tag: TokenTagEOF, Loc: l.startLoc}, nil
 	}
 
 	return Token{}, ErrInvalidCharacter
@@ -110,7 +103,7 @@ func (l *Lexer) tryReadEOL() (Token, error) {
 		return Token{}, ErrInvalidCharacter
 	}
 
-	start := l.locBeforeSpace
+	start := l.startLoc
 	for l.current == '\n' || l.current == ';' {
 		err := l.advanceRune()
 		if err != nil {
@@ -129,7 +122,7 @@ func (l *Lexer) tryReadComment() (Token, error) {
 		return Token{}, ErrInvalidCharacter
 	}
 
-	start := l.loc
+	start := l.startLoc
 	value := strings.Builder{}
 
 	for l.current != '\n' && l.current != 0 {
@@ -161,7 +154,7 @@ func (l *Lexer) tryReadNumber() (Token, error) {
 	}
 
 	tag := TokenTagDecInt
-	start := l.loc
+	start := l.startLoc
 	haveExp := false
 	value := strings.Builder{}
 
@@ -259,7 +252,7 @@ func (l *Lexer) tryReadString() (Token, error) {
 		return Token{}, ErrInvalidCharacter
 	}
 
-	start := l.loc
+	start := l.startLoc
 	value := strings.Builder{}
 
 	for l.current != '\n' && l.current != 0 {
@@ -340,7 +333,7 @@ func (l *Lexer) decodeEscapeSequence(value *strings.Builder) error {
 		}
 
 		charDigits := strings.Builder{}
-		for i := 0; i < takeNext; i++ {
+		for range takeNext {
 			err = l.advanceRune()
 			if err != nil {
 				return err
@@ -375,7 +368,7 @@ func (l *Lexer) tryReadWord() (Token, error) {
 		return Token{}, ErrInvalidCharacter
 	}
 
-	start := l.loc
+	start := l.startLoc
 	value := strings.Builder{}
 
 	for unicode.IsLetter(l.current) || unicode.IsDigit(l.current) || l.current == '_' {
@@ -386,6 +379,7 @@ func (l *Lexer) tryReadWord() (Token, error) {
 		}
 	}
 
+	l.endLoc.Col = start.Col + value.Len()
 	return Token{
 		Tag:   TokenTagWord,
 		Loc:   start,
@@ -395,7 +389,7 @@ func (l *Lexer) tryReadWord() (Token, error) {
 
 func (l *Lexer) tryReadPunct() (Token, error) {
 	value := strings.Builder{}
-	start := l.loc
+	start := l.startLoc
 	for {
 		if !slices.Contains(punctuations, value.String()+string(l.current)) {
 			break
@@ -412,6 +406,7 @@ func (l *Lexer) tryReadPunct() (Token, error) {
 		return Token{}, ErrInvalidCharacter
 	}
 
+	l.endLoc.Col = start.Col + value.Len()
 	return Token{
 		Tag:   TokenTagPunct,
 		Loc:   start,
@@ -442,6 +437,10 @@ func (l *Lexer) Read() (Token, error) {
 		return token, errors.Join(err, token.GetErrorf("cannot skip spaces"))
 	}
 
+	defer func() {
+		l.startLoc = l.endLoc
+	}()
+
 	// order is important
 	classifiers := []tryReadFn{
 		l.tryReadEOF,
@@ -457,13 +456,11 @@ func (l *Lexer) Read() (Token, error) {
 		if err != nil && !errors.Is(err, ErrInvalidCharacter) {
 			return token, err
 		} else if err == nil {
-			l.loc = l.curLoc
-			l.loc.Col -= 1
 			return token, nil
 		}
 	}
 
-	token = Token{Loc: l.loc}
+	token = Token{}
 	return token, errors.Join(ErrCannotTokenize, ErrInvalidCharacter, token.GetErrorf("invalid character: %q", l.current))
 }
 
@@ -473,7 +470,6 @@ func (l *Lexer) Unread(token Token) error {
 		return ErrAlreadyUnread
 	}
 
-	l.curLoc.Col -= 1
 	l.unread = &token
 	return nil
 }
