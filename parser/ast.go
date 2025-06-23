@@ -12,11 +12,6 @@ type Expr interface {
 	expr()
 }
 
-// TypeExpr represent any expresion that is compatible with types, such ids and arrays
-type TypeExpr interface {
-	typeExpr()
-}
-
 // Literal represents any plain data in text representation
 type Literal struct {
 	Token lexer.Token
@@ -30,8 +25,6 @@ type Ident struct {
 }
 
 func (i *Ident) expr() {}
-
-func (i *Ident) typeExpr() {}
 
 // Call represents a call expression (callee(args))
 type Call struct {
@@ -66,42 +59,41 @@ type BinaryOp struct {
 
 func (bo *BinaryOp) expr() {}
 
-// TypeIndex represents a selection expression in types domain (Type[index])
-type TypeIndex struct {
-	Base  TypeExpr
-	Index Expr
-}
-
-func (ti *TypeIndex) typeExpr() {}
-
 // StructDef represents the definition of a struct body(struct { fields ... })
 type StructDef struct {
 	Block Block
 }
 
-func (sd *StructDef) typeExpr() {}
+func (sd *StructDef) expr() {}
 
 // UnionDef represents the definition of a union body(union { fields ... })
 type UnionDef struct {
 	Block Block
 }
 
-func (ud *UnionDef) typeExpr() {}
+func (ud *UnionDef) expr() {}
 
 // EnumDef represents the definition of a enum body(enum { fields ... })
 type EnumDef struct {
 	Block Block
 }
 
-func (sd *EnumDef) typeExpr() {}
+func (sd *EnumDef) expr() {}
 
 // PrototypeDef represents the definition of a prototype (proc(int, int) -> int)
 type PrototypeDef struct {
 	Params     []Field
-	ReturnType TypeExpr
+	ReturnType Expr
 }
 
-func (pd *PrototypeDef) typeExpr() {}
+func (pd *PrototypeDef) expr() {}
+
+// OpionBlock represents metadata options for fields and types
+type OptionBlock struct {
+	Block Block
+}
+
+func (ob *OptionBlock) decl() {}
 
 // Block represents a sequence of declarations within a scope ({})
 type Block struct {
@@ -110,28 +102,19 @@ type Block struct {
 
 // Field represents a binding declaration (name : Type = value)
 type Field struct {
-	Name  Ident
-	Type  TypeExpr
-	Value Expr
-	Block *Block
+	Name    Expr
+	Type    Expr
+	Value   Expr
+	Options *OptionBlock
 }
 
 func (fi *Field) decl() {}
 
-// Option represents metadata attached to the current scope (option name = "x")
-type Option struct {
-	Name      Ident
-	Overwrite bool
-	Block     *Block
-}
-
-func (op *Option) decl() {}
-
 // TypeDecl represents a type declaration ("type Name Type" or "proc Name(arg: Type) -> Type")
 type TypeDecl struct {
-	Name   Ident
-	Params []Field
-	Type   TypeExpr
+	Name          Ident
+	GenericParams []Field
+	Type          Expr
 }
 
 func (ty *TypeDecl) decl() {}

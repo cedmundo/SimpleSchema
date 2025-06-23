@@ -3,36 +3,27 @@ generate code for different targets to encode/decode data via SDL3
 stream functions.
 
 ```
-module name {
-  option prop1 = "value"
-  option prop2 = 123
-  option prop3 = prop2 * 2 // todo
-  option fmb_encoder_py {
-    endianness = "be"
-  }
+module name options {
+  name = "hello"
+  value = "world"
 }
 
 type example1 struct {
   field : Type = Value
-  field_with_options : u32 {
-    option encoding = "utf-8"
-    option lua_bindings {
-      name_in_table = "field_1"
-    }
+  field_with_options : u32 options {
+    endianness = "be"
+  }
+
+  options {
+    debug_info.name = "component:example1"
   }
 }
 
 type example2 enum {
   BLACK // zero by default
   WHITE = 0xFFFFFF
-  RED = 0xFF0000 {
-    option lua_bindings {
-      prefix = "RGB_"
-    }
-  }
-
-  option lua_bindings {
-    prefix = "COLOR_"
+  RED = 0xFF0000 options {
+    py_fmd.name = "red_color"
   }
 }
 
@@ -50,11 +41,7 @@ type dependant_array struct {
 }
 
 type magic_prefix_example struct {
-  // This will enforce the encoder/decoder to write/read the literal "FMF::EXAMPLE"
-  magic : const String = "FMF::EXAMPLE" {
-    // We dont want to actually encode/decode this data to/from lua table
-    option lua_bindings.exclude = true
-  }
+  magic : magic_string = "FMD::EXAMPLE"
 }
 
 type vec2 float[4] {
@@ -64,22 +51,6 @@ type vec2 float[4] {
   proc add(src1 : const vec2, src2 : const vec2, dest : vec2) -> void
 }
 
-type overwrite_example struct {
-  option example {
-    name = "hello world!"
-  }
-
-  x : int {
-    option example extend {
-      // name = "hello world!"
-      salute = "amigo!"
-    }
-
-    option example overwrite {
-      // no name property
-      salute = "hi!"
-    }
-  }
-}
+type add_fn proc(int, int) -> int // typedef int add_fn(int, int)
 ```
 

@@ -46,6 +46,86 @@ func TestParser_ParseAtom(t *testing.T) {
 			},
 		},
 		{
+			name:  "parse struct def",
+			input: "struct{}",
+			expectedExpr: &parser.StructDef{
+				Block: parser.Block{Decls: []parser.Decl{}},
+			},
+		},
+		{
+			name:  "parse union def",
+			input: "union{}",
+			expectedExpr: &parser.UnionDef{
+				Block: parser.Block{Decls: []parser.Decl{}},
+			},
+		},
+		{
+			name:  "parse enum def",
+			input: "enum{}",
+			expectedExpr: &parser.EnumDef{
+				Block: parser.Block{Decls: []parser.Decl{}},
+			},
+		},
+		{
+			name:  "parse empty prototype def",
+			input: "proc() -> void",
+			expectedExpr: &parser.PrototypeDef{
+				Params: make([]parser.Field, 0),
+				ReturnType: &parser.Ident{
+					Token: lexer.Token{
+						Tag:   lexer.TokenTagWord,
+						Value: "void",
+						Loc: lexer.Location{
+							File: "parse empty prototype def",
+							Col:  10,
+							Row:  0,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:  "parse prototype def with args",
+			input: "proc(int, int) -> int",
+			expectedExpr: &parser.PrototypeDef{
+				Params: []parser.Field{
+					{Type: &parser.Ident{
+						Token: lexer.Token{
+							Tag:   lexer.TokenTagWord,
+							Value: "int",
+							Loc: lexer.Location{
+								File: "parse prototype def with args",
+								Col:  5,
+								Row:  0,
+							},
+						},
+					}},
+					{Type: &parser.Ident{
+						Token: lexer.Token{
+							Tag:   lexer.TokenTagWord,
+							Value: "int",
+							Loc: lexer.Location{
+								File: "parse prototype def with args",
+								Col:  10,
+								Row:  0,
+							},
+						},
+					}},
+				},
+				ReturnType: &parser.Ident{
+					Token: lexer.Token{
+						Tag:   lexer.TokenTagWord,
+						Value: "int",
+						Loc: lexer.Location{
+							File: "parse prototype def with args",
+							Col:  18,
+							Row:  0,
+						},
+					},
+				},
+			},
+		},
+		{
 			name:  "parse group atom",
 			input: "(hello)",
 			expectedExpr: &parser.Ident{

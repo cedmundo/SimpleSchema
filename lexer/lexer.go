@@ -29,7 +29,7 @@ var (
 	// ErrAlreadyUnread indicates an attempt to mark a token as unread when there is already an existing unread token.
 	ErrAlreadyUnread = errors.New("token is already unread")
 	punctuations     = []string{
-		"(", ")", "[", "]", ",", ".", ":", "=", "+", "-", "*", "/", "%",
+		"(", ")", "[", "]", "{", "}", ",", ".", ":", "=", "+", "-", "*", "/", "%",
 		">", "<", "^", "~", "!", "|", "&", ":=", "==", "!=", ">=", "<=",
 		">>", "<<", "&&", "||", "=>", "->",
 	}
