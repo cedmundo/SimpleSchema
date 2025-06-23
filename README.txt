@@ -1,4 +1,4 @@
-SimpleSchema is a programming language to define data schemas and
+SimpleSchema is a programming language to define exchange formats and
 generate code for different targets to encode/decode data via SDL3
 stream functions.
 
@@ -37,7 +37,7 @@ type example2 enum {
 }
 
 type example3 union {
-  field : Type = Value
+  field : Type
 }
 
 type fixed_array struct {
@@ -51,7 +51,7 @@ type dependant_array struct {
 
 type magic_prefix_example struct {
   // This will enforce the encoder/decoder to write/read the literal "FMF::EXAMPLE"
-  magic : String = "FMF::EXAMPLE" {
+  magic : const String = "FMF::EXAMPLE" {
     // We dont want to actually encode/decode this data to/from lua table
     option lua_bindings.exclude = true
   }
@@ -61,7 +61,25 @@ type vec2 float[4] {
   /**
   * add. Adds the components from src1 to src2 and stores the result in dest.
   */
-  proc add(src1 : const vec2, src2 : const vec2, dest : vec2): void
+  proc add(src1 : const vec2, src2 : const vec2, dest : vec2) -> void
+}
+
+type overwrite_example struct {
+  option example {
+    name = "hello world!"
+  }
+
+  x : int {
+    option example extend {
+      // name = "hello world!"
+      salute = "amigo!"
+    }
+
+    option example overwrite {
+      // no name property
+      salute = "hi!"
+    }
+  }
 }
 ```
 
