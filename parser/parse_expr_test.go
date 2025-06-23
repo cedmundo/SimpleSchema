@@ -497,6 +497,161 @@ func TestParser_ParseBinary(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "parse single binary operator",
+			input: "a + b",
+			expectedExpr: &parser.BinaryOp{
+				Operator: lexer.Token{
+					Tag: lexer.TokenTagPunct,
+					Loc: lexer.Location{
+						File: "parse single binary operator",
+						Row:  0,
+						Col:  2,
+					},
+					Value: "+",
+				},
+				Left: &parser.Ident{
+					Token: lexer.Token{
+						Tag: lexer.TokenTagWord,
+						Loc: lexer.Location{
+							File: "parse single binary operator",
+							Row:  0,
+							Col:  0,
+						},
+						Value: "a",
+					},
+				},
+				Right: &parser.Ident{
+					Token: lexer.Token{
+						Tag: lexer.TokenTagWord,
+						Loc: lexer.Location{
+							File: "parse single binary operator",
+							Row:  0,
+							Col:  4,
+						},
+						Value: "b",
+					},
+				},
+			},
+		},
+		{
+			name:  "parse multiple binary operators",
+			input: "a + b + c",
+			expectedExpr: &parser.BinaryOp{
+				Operator: lexer.Token{
+					Tag: lexer.TokenTagPunct,
+					Loc: lexer.Location{
+						File: "parse multiple binary operators",
+						Row:  0,
+						Col:  6,
+					},
+					Value: "+",
+				},
+				Left: &parser.BinaryOp{
+					Operator: lexer.Token{
+						Tag: lexer.TokenTagPunct,
+						Loc: lexer.Location{
+							File: "parse multiple binary operators",
+							Row:  0,
+							Col:  2,
+						},
+						Value: "+",
+					},
+					Left: &parser.Ident{
+						Token: lexer.Token{
+							Tag: lexer.TokenTagWord,
+							Loc: lexer.Location{
+								File: "parse multiple binary operators",
+								Row:  0,
+								Col:  0,
+							},
+							Value: "a",
+						},
+					},
+					Right: &parser.Ident{
+						Token: lexer.Token{
+							Tag: lexer.TokenTagWord,
+							Loc: lexer.Location{
+								File: "parse multiple binary operators",
+								Row:  0,
+								Col:  4,
+							},
+							Value: "b",
+						},
+					},
+				},
+				Right: &parser.Ident{
+					Token: lexer.Token{
+						Tag: lexer.TokenTagWord,
+						Loc: lexer.Location{
+							File: "parse multiple binary operators",
+							Row:  0,
+							Col:  8,
+						},
+						Value: "c",
+					},
+				},
+			},
+		},
+		{
+			name:  "parse grouped binary operators",
+			input: "a + (b + c)",
+			expectedExpr: &parser.BinaryOp{
+				Operator: lexer.Token{
+					Tag: lexer.TokenTagPunct,
+					Loc: lexer.Location{
+						File: "parse grouped binary operators",
+						Row:  0,
+						Col:  2,
+					},
+					Value: "+",
+				},
+				Left: &parser.Ident{
+					Token: lexer.Token{
+						Tag: lexer.TokenTagWord,
+						Loc: lexer.Location{
+							File: "parse grouped binary operators",
+							Row:  0,
+							Col:  0,
+						},
+						Value: "a",
+					},
+				},
+				Right: &parser.BinaryOp{
+					Operator: lexer.Token{
+						Tag: lexer.TokenTagPunct,
+						Loc: lexer.Location{
+							File: "parse grouped binary operators",
+							Row:  0,
+							Col:  7,
+						},
+						Value: "+",
+					},
+					Left: &parser.Ident{
+						Token: lexer.Token{
+							Tag: lexer.TokenTagWord,
+							Loc: lexer.Location{
+								File: "parse grouped binary operators",
+								Row:  0,
+								Col:  5,
+							},
+							Value: "b",
+						},
+					},
+					Right: &parser.Ident{
+						Token: lexer.Token{
+							Tag: lexer.TokenTagWord,
+							Loc: lexer.Location{
+								File: "parse grouped binary operators",
+								Row:  0,
+								Col:  9,
+							},
+							Value: "c",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
