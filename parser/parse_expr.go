@@ -80,19 +80,56 @@ func (p *Parser) parseField() (Decl, error) {
 
 	_, err = p.expect(lexer.Token{Tag: lexer.TokenTagWord, Value: "options"})
 	if err == nil {
-		// TODO(cedmundo): Use option block instead, leaving a block
-		//	would lead to validation issues.
-		block, err := p.parseBlock()
+		block, err := p.parseOptionBlock()
 		if err != nil {
 			return nil, err
 		}
 
-		field.Options = &OptionBlock{Block: block}
+		field.Options = &block
 	}
 
 	// end of line
 	_, err = p.expect(lexer.Token{Tag: lexer.TokenTagEOL})
 	return field, err
+}
+
+func (p *Parser) parseOptionBlock() (OptionBlock, error) {
+	_, err := p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "{"})
+	if err != nil {
+		return OptionBlock{}, err
+	}
+
+	// Skip the end of line after "{" if needed
+	_, _ = p.expect(lexer.Token{Tag: lexer.TokenTagEOL})
+
+	options := make([]Option, 0)
+	for {
+		option := Option{}
+		option.Name, err = p.ParseLookup()
+		if err != nil {
+			break
+		}
+
+		_, err = p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "="})
+		if err != nil {
+			return OptionBlock{}, err
+		}
+
+		option.Value, err = p.ParseExpr()
+		if err != nil {
+			return OptionBlock{}, err
+		}
+
+		_, err = p.expect(lexer.Token{Tag: lexer.TokenTagEOL})
+		if err != nil {
+			return OptionBlock{}, err
+		}
+
+		options = append(options, option)
+	}
+
+	_, err = p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "}"})
+	return OptionBlock{Options: options}, err
 }
 
 func (p *Parser) parseBlock() (Block, error) {
@@ -106,22 +143,20 @@ func (p *Parser) parseBlock() (Block, error) {
 
 	decls := make([]Decl, 0)
 	for {
-		field, err := p.parseField()
-		if err == nil {
-			decls = append(decls, field)
-			continue
-		}
-
 		_, err = p.expect(lexer.Token{Tag: lexer.TokenTagWord, Value: "options"})
 		if err == nil {
-			// TODO(cedmundo): Use option block instead, leaving a block
-			//	would lead to validation issues.
-			block, err := p.parseBlock()
+			block, err := p.parseOptionBlock()
 			if err != nil {
 				return Block{}, err
 			}
 
-			decls = append(decls, &OptionBlock{Block: block})
+			decls = append(decls, &block)
+			continue
+		}
+
+		field, err := p.parseField()
+		if err == nil {
+			decls = append(decls, field)
 			continue
 		}
 

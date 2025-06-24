@@ -88,9 +88,15 @@ type PrototypeDef struct {
 
 func (pd *PrototypeDef) expr() {}
 
-// OpionBlock represents metadata options for fields and types
+// Option represents a single metadata assignation
+type Option struct {
+	Name  Expr
+	Value Expr
+}
+
+// OpionBlock represents group of metadata assignations
 type OptionBlock struct {
-	Block Block
+	Options []Option
 }
 
 func (ob *OptionBlock) decl() {}

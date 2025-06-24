@@ -747,3 +747,220 @@ func TestParser_ParseBinary(t *testing.T) {
 		})
 	}
 }
+
+func TestParse_Fields(t *testing.T) {
+	cases := []struct {
+		name         string
+		input        string
+		expectedExpr parser.Expr
+		expectedErr  error
+	}{
+		{
+			name:  "parse struct without fields",
+			input: "struct {}",
+			expectedExpr: &parser.StructDef{
+				Block: parser.Block{Decls: []parser.Decl{}},
+			},
+		},
+		{
+			name:  "parse struct single field",
+			input: "struct { a : int; }",
+			expectedExpr: &parser.StructDef{
+				Block: parser.Block{Decls: []parser.Decl{
+					&parser.Field{
+						Name: &parser.Ident{
+							Token: lexer.Token{
+								Tag: lexer.TokenTagWord,
+								Loc: lexer.Location{
+									File: "parse struct single field",
+									Row:  0,
+									Col:  9,
+								},
+								Value: "a",
+							},
+						},
+						Type: &parser.Ident{
+							Token: lexer.Token{
+								Tag: lexer.TokenTagWord,
+								Loc: lexer.Location{
+									File: "parse struct single field",
+									Row:  0,
+									Col:  13,
+								},
+								Value: "int",
+							},
+						},
+					},
+				}},
+			},
+		},
+		{
+			name:  "parse struct multiple fields",
+			input: "struct { a : int; b : int; }",
+			expectedExpr: &parser.StructDef{
+				Block: parser.Block{Decls: []parser.Decl{
+					&parser.Field{
+						Name: &parser.Ident{
+							Token: lexer.Token{
+								Tag: lexer.TokenTagWord,
+								Loc: lexer.Location{
+									File: "parse struct multiple fields",
+									Row:  0,
+									Col:  9,
+								},
+								Value: "a",
+							},
+						},
+						Type: &parser.Ident{
+							Token: lexer.Token{
+								Tag: lexer.TokenTagWord,
+								Loc: lexer.Location{
+									File: "parse struct multiple fields",
+									Row:  0,
+									Col:  13,
+								},
+								Value: "int",
+							},
+						},
+					},
+					&parser.Field{
+						Name: &parser.Ident{
+							Token: lexer.Token{
+								Tag: lexer.TokenTagWord,
+								Loc: lexer.Location{
+									File: "parse struct multiple fields",
+									Row:  0,
+									Col:  18,
+								},
+								Value: "b",
+							},
+						},
+						Type: &parser.Ident{
+							Token: lexer.Token{
+								Tag: lexer.TokenTagWord,
+								Loc: lexer.Location{
+									File: "parse struct multiple fields",
+									Row:  0,
+									Col:  22,
+								},
+								Value: "int",
+							},
+						},
+					},
+				}},
+			},
+		},
+		{
+			name:  "parse struct with empty options",
+			input: "struct { options {} }",
+			expectedExpr: &parser.StructDef{
+				Block: parser.Block{Decls: []parser.Decl{&parser.OptionBlock{Options: []parser.Option{}}}},
+			},
+		},
+		{
+			name:  "parse struct with single option",
+			input: "struct { options { a = b; } }",
+			expectedExpr: &parser.StructDef{
+				Block: parser.Block{Decls: []parser.Decl{
+					&parser.OptionBlock{Options: []parser.Option{
+						{
+							Name: &parser.Ident{
+								Token: lexer.Token{
+									Tag: lexer.TokenTagWord,
+									Loc: lexer.Location{
+										File: "parse struct with single option",
+										Row:  0,
+										Col:  19,
+									},
+									Value: "a",
+								},
+							},
+							Value: &parser.Ident{
+								Token: lexer.Token{
+									Tag: lexer.TokenTagWord,
+									Loc: lexer.Location{
+										File: "parse struct with single option",
+										Row:  0,
+										Col:  23,
+									},
+									Value: "b",
+								},
+							},
+						},
+					}},
+				}},
+			},
+		},
+		{
+			name:  "parse struct with field with option",
+			input: "struct { x : int options { a = b; }; }",
+			expectedExpr: &parser.StructDef{
+				Block: parser.Block{Decls: []parser.Decl{
+					&parser.Field{
+						Name: &parser.Ident{
+							Token: lexer.Token{
+								Tag: lexer.TokenTagWord,
+								Loc: lexer.Location{
+									File: "parse struct with field with option",
+									Row:  0,
+									Col:  9,
+								},
+								Value: "x",
+							},
+						},
+						Type: &parser.Ident{
+							Token: lexer.Token{
+								Tag: lexer.TokenTagWord,
+								Loc: lexer.Location{
+									File: "parse struct with field with option",
+									Row:  0,
+									Col:  13,
+								},
+								Value: "int",
+							},
+						},
+						Options: &parser.OptionBlock{Options: []parser.Option{
+							{
+								Name: &parser.Ident{
+									Token: lexer.Token{
+										Tag: lexer.TokenTagWord,
+										Loc: lexer.Location{
+											File: "parse struct with field with option",
+											Row:  0,
+											Col:  27,
+										},
+										Value: "a",
+									},
+								},
+								Value: &parser.Ident{
+									Token: lexer.Token{
+										Tag: lexer.TokenTagWord,
+										Loc: lexer.Location{
+											File: "parse struct with field with option",
+											Row:  0,
+											Col:  31,
+										},
+										Value: "b",
+									},
+								},
+							},
+						}},
+					},
+				}},
+			},
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			p := parser.NewFromString(tt.name, tt.input)
+			actualExpr, actualErr := p.ParseExpr()
+			if tt.expectedErr != nil {
+				require.ErrorIs(t, actualErr, tt.expectedErr)
+				return
+			}
+
+			require.NoError(t, actualErr)
+			require.Equal(t, tt.expectedExpr, actualExpr)
+		})
+	}
+}
