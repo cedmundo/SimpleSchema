@@ -278,3 +278,45 @@ func TestLexer_SingleScans(t *testing.T) {
 		})
 	}
 }
+
+func TestLexer_TestSkipEOL(t *testing.T) {
+	input := "example\nignoring\nEOLs"
+	lex := lexer.NewFromString("test", input)
+
+	token, err := lex.Read()
+	require.NoError(t, err)
+	require.Equal(t, lexer.Token{
+		Tag:   lexer.TokenTagWord,
+		Loc:   lexer.Location{File: "test", Row: 0, Col: 0},
+		Value: "example",
+	}, token)
+
+	lex.PushGroup()
+
+	token, err = lex.Read()
+	require.NoError(t, err)
+	require.Equal(t, lexer.Token{
+		Tag:   lexer.TokenTagWord,
+		Loc:   lexer.Location{File: "test", Row: 2, Col: 0},
+		Value: "ignoring",
+	}, token)
+
+	err = lex.PopGroup()
+	require.NoError(t, err)
+
+	token, err = lex.Read()
+	require.NoError(t, err)
+	require.Equal(t, lexer.Token{
+		Tag:   lexer.TokenTagEOL,
+		Loc:   lexer.Location{File: "test", Row: 2, Col: 8},
+		Value: "",
+	}, token)
+
+	token, err = lex.Read()
+	require.NoError(t, err)
+	require.Equal(t, lexer.Token{
+		Tag:   lexer.TokenTagWord,
+		Loc:   lexer.Location{File: "test", Row: 2, Col: 9}, // should be 3 and 0
+		Value: "EOLs",
+	}, token)
+}

@@ -850,84 +850,79 @@ func TestParse_Fields(t *testing.T) {
 				}},
 			},
 		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			p := parser.NewFromString(tt.name, tt.input)
+			actualExpr, actualErr := p.ParseExpr()
+			if tt.expectedErr != nil {
+				require.ErrorIs(t, actualErr, tt.expectedErr)
+				return
+			}
+
+			require.NoError(t, actualErr)
+			require.Equal(t, tt.expectedExpr, actualExpr)
+		})
+	}
+}
+
+func TestParse_Annotations(t *testing.T) {
+	cases := []struct {
+		name         string
+		input        string
+		expectedExpr parser.Expr
+		expectedErr  error
+	}{
 		{
-			name:  "parse struct with empty options",
-			input: "struct { options {} }",
-			expectedExpr: &parser.StructDef{
-				Block: parser.Block{Decls: []parser.Decl{&parser.OptionBlock{Options: []parser.Option{}}}},
-			},
-		},
-		{
-			name:  "parse struct with single option",
-			input: "struct { options { a = b; } }",
+			name:  "parse field with empty annotations",
+			input: "struct { [[]] x : int; }",
 			expectedExpr: &parser.StructDef{
 				Block: parser.Block{Decls: []parser.Decl{
-					&parser.OptionBlock{Options: []parser.Option{
-						{
+					&parser.AnnotatedDecl{
+						Annotations: []*parser.Annotation{},
+						Decl: &parser.Field{
 							Name: &parser.Ident{
 								Token: lexer.Token{
 									Tag: lexer.TokenTagWord,
 									Loc: lexer.Location{
-										File: "parse struct with single option",
+										File: "parse field with empty annotations",
 										Row:  0,
-										Col:  19,
+										Col:  14,
 									},
-									Value: "a",
+									Value: "x",
 								},
 							},
-							Value: &parser.Ident{
+							Type: &parser.Ident{
 								Token: lexer.Token{
 									Tag: lexer.TokenTagWord,
 									Loc: lexer.Location{
-										File: "parse struct with single option",
+										File: "parse field with empty annotations",
 										Row:  0,
-										Col:  23,
+										Col:  18,
 									},
-									Value: "b",
+									Value: "int",
 								},
 							},
 						},
-					}},
+					},
 				}},
 			},
 		},
 		{
-			name:  "parse struct with field with option",
-			input: "struct { x : int options { a = b; }; }",
+			name:  "parse field with single annotation",
+			input: "struct { [[ a = b ]] x : int; }",
 			expectedExpr: &parser.StructDef{
 				Block: parser.Block{Decls: []parser.Decl{
-					&parser.Field{
-						Name: &parser.Ident{
-							Token: lexer.Token{
-								Tag: lexer.TokenTagWord,
-								Loc: lexer.Location{
-									File: "parse struct with field with option",
-									Row:  0,
-									Col:  9,
-								},
-								Value: "x",
-							},
-						},
-						Type: &parser.Ident{
-							Token: lexer.Token{
-								Tag: lexer.TokenTagWord,
-								Loc: lexer.Location{
-									File: "parse struct with field with option",
-									Row:  0,
-									Col:  13,
-								},
-								Value: "int",
-							},
-						},
-						Options: &parser.OptionBlock{Options: []parser.Option{
+					&parser.AnnotatedDecl{
+						Annotations: []*parser.Annotation{
 							{
 								Name: &parser.Ident{
 									Token: lexer.Token{
 										Tag: lexer.TokenTagWord,
 										Loc: lexer.Location{
-											File: "parse struct with field with option",
+											File: "parse field with single annotation",
 											Row:  0,
-											Col:  27,
+											Col:  12,
 										},
 										Value: "a",
 									},
@@ -936,15 +931,123 @@ func TestParse_Fields(t *testing.T) {
 									Token: lexer.Token{
 										Tag: lexer.TokenTagWord,
 										Loc: lexer.Location{
-											File: "parse struct with field with option",
+											File: "parse field with single annotation",
 											Row:  0,
-											Col:  31,
+											Col:  16,
 										},
 										Value: "b",
 									},
 								},
 							},
-						}},
+						},
+						Decl: &parser.Field{
+							Name: &parser.Ident{
+								Token: lexer.Token{
+									Tag: lexer.TokenTagWord,
+									Loc: lexer.Location{
+										File: "parse field with single annotation",
+										Row:  0,
+										Col:  21,
+									},
+									Value: "x",
+								},
+							},
+							Type: &parser.Ident{
+								Token: lexer.Token{
+									Tag: lexer.TokenTagWord,
+									Loc: lexer.Location{
+										File: "parse field with single annotation",
+										Row:  0,
+										Col:  25,
+									},
+									Value: "int",
+								},
+							},
+						},
+					},
+				}},
+			},
+		},
+		{
+			name:  "parse field with multiple annotations",
+			input: "struct { [[ a = b, c = d ]] x : int; }",
+			expectedExpr: &parser.StructDef{
+				Block: parser.Block{Decls: []parser.Decl{
+					&parser.AnnotatedDecl{
+						Annotations: []*parser.Annotation{
+							{
+								Name: &parser.Ident{
+									Token: lexer.Token{
+										Tag: lexer.TokenTagWord,
+										Loc: lexer.Location{
+											File: "parse field with multiple annotations",
+											Row:  0,
+											Col:  12,
+										},
+										Value: "a",
+									},
+								},
+								Value: &parser.Ident{
+									Token: lexer.Token{
+										Tag: lexer.TokenTagWord,
+										Loc: lexer.Location{
+											File: "parse field with multiple annotations",
+											Row:  0,
+											Col:  16,
+										},
+										Value: "b",
+									},
+								},
+							},
+							{
+								Name: &parser.Ident{
+									Token: lexer.Token{
+										Tag: lexer.TokenTagWord,
+										Loc: lexer.Location{
+											File: "parse field with multiple annotations",
+											Row:  0,
+											Col:  19,
+										},
+										Value: "c",
+									},
+								},
+								Value: &parser.Ident{
+									Token: lexer.Token{
+										Tag: lexer.TokenTagWord,
+										Loc: lexer.Location{
+											File: "parse field with multiple annotations",
+											Row:  0,
+											Col:  23,
+										},
+										Value: "d",
+									},
+								},
+							},
+						},
+						Decl: &parser.Field{
+							Name: &parser.Ident{
+								Token: lexer.Token{
+									Tag: lexer.TokenTagWord,
+									Loc: lexer.Location{
+										File: "parse field with multiple annotations",
+										Row:  0,
+										Col:  28,
+									},
+									Value: "x",
+								},
+							},
+							Type: &parser.Ident{
+								Token: lexer.Token{
+									Tag: lexer.TokenTagWord,
+									Loc: lexer.Location{
+										File: "parse field with multiple annotations",
+										Row:  0,
+										Col:  32,
+									},
+									Value: "int",
+								},
+							},
+						},
 					},
 				}},
 			},

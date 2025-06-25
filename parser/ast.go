@@ -88,19 +88,6 @@ type PrototypeDef struct {
 
 func (pd *PrototypeDef) expr() {}
 
-// Option represents a single metadata assignation
-type Option struct {
-	Name  Expr
-	Value Expr
-}
-
-// OpionBlock represents group of metadata assignations
-type OptionBlock struct {
-	Options []Option
-}
-
-func (ob *OptionBlock) decl() {}
-
 // Block represents a sequence of declarations within a scope ({})
 type Block struct {
 	Decls []Decl
@@ -108,10 +95,9 @@ type Block struct {
 
 // Field represents a binding declaration (name : Type = value)
 type Field struct {
-	Name    Expr
-	Type    Expr
-	Value   Expr
-	Options *OptionBlock
+	Name  Expr
+	Type  Expr
+	Value Expr
 }
 
 func (fi *Field) decl() {}
@@ -124,6 +110,29 @@ type TypeDecl struct {
 }
 
 func (ty *TypeDecl) decl() {}
+
+// ProcDecl represents a type declaration ("proc name(args) -> type")
+type ProcDecl struct {
+	Name          Ident
+	GenericParams []Field
+	Type          Expr
+}
+
+func (pd *ProcDecl) decl() {}
+
+// Annotation maps from lookup name to a value
+type Annotation struct {
+	Name  Expr
+	Value Expr
+}
+
+// AnnotatedDecl wraps another construct with meta parameters
+type AnnotatedDecl struct {
+	Annotations []*Annotation
+	Decl        Decl
+}
+
+func (aw *AnnotatedDecl) decl() {}
 
 // Schema represents the data of an entire schema file
 type Schema struct {

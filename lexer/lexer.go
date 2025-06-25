@@ -28,10 +28,14 @@ var (
 
 	// ErrAlreadyUnread indicates an attempt to mark a token as unread when there is already an existing unread token.
 	ErrAlreadyUnread = errors.New("token is already unread")
-	punctuations     = []string{
+
+	// ErrUnbalancedGroup indicates that the grouping is not valid (there are more closes than opens)
+	ErrUnbalancedGroup = errors.New("unbalanced group")
+
+	punctuations = []string{
 		"(", ")", "[", "]", "{", "}", ",", ".", ":", "=", "+", "-", "*", "/", "%",
 		">", "<", "^", "~", "!", "|", "&", ":=", "==", "!=", ">=", "<=",
-		">>", "<<", "&&", "||", "=>", "->",
+		">>", "<<", "&&", "||", "=>", "->", "[[", "]]",
 	}
 )
 
@@ -43,6 +47,7 @@ type Lexer struct {
 	consumed bool
 	reader   io.RuneReader
 	unread   *Token
+	group    int
 }
 
 type tryReadFn func() (Token, error)
@@ -78,8 +83,13 @@ func (l *Lexer) advanceRune() (err error) {
 }
 
 func (l *Lexer) skipSpaces() error {
-	for l.current == ' ' || l.current == '\t' {
+	for l.current == ' ' || l.current == '\t' || (l.group != 0 && unicode.IsSpace(l.current)) {
 		l.startLoc.Col += 1
+		if l.current == '\n' {
+			l.startLoc.Col = 0
+			l.startLoc.Row += 1
+		}
+
 		err := l.advanceRune()
 		if err != nil {
 			return err
@@ -98,8 +108,7 @@ func (l *Lexer) tryReadEOF() (Token, error) {
 }
 
 func (l *Lexer) tryReadEOL() (Token, error) {
-	// TODO(cedmundo): Don't read EOLs within group or index expressions (i.e. "()", "[]")
-	if l.current != '\n' && l.current != ';' {
+	if l.group != 0 || (l.current != '\n' && l.current != ';') {
 		return Token{}, ErrInvalidCharacter
 	}
 
@@ -471,6 +480,21 @@ func (l *Lexer) Unread(token Token) error {
 	}
 
 	l.unread = &token
+	return nil
+}
+
+// PushGroup pushes a group so lexer will ignore new lines
+func (l *Lexer) PushGroup() {
+	l.group += 1
+}
+
+// PushGroup pops a group so lexer will stop to ignore new lines
+func (l *Lexer) PopGroup() error {
+	if l.group <= 0 {
+		return ErrUnbalancedGroup
+	}
+
+	l.group -= 1
 	return nil
 }
 

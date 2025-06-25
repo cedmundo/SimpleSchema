@@ -3,28 +3,23 @@ generate code for different targets to encode/decode data via SDL3
 stream functions.
 
 ```
-module name options {
-  name = "hello"
-  value = "world"
-}
+[[ binding_name = "hello world" ]]
+module name
 
+[[ debug_info.name = "hello friend" ]]
 type example1 struct {
   field : Type = Value
-  field_with_options : u32 options {
-    endianness = "be"
-  }
 
-  options {
-    debug_info.name = "component:example1"
-  }
+  [[ endianess = "be" ]]
+  field_with_options : u32
 }
 
 type example2 enum {
   BLACK // zero by default
   WHITE = 0xFFFFFF
-  RED = 0xFF0000 options {
-    py_fmd.name = "red_color"
-  }
+
+  [[ py_fmd.name = "red_color" ]]
+  RED = 0xFF0000
 }
 
 type example3 union {
@@ -44,12 +39,11 @@ type magic_prefix_example struct {
   magic : magic_string = "FMD::EXAMPLE"
 }
 
-type vec2 float[4] {
-  /**
-  * add. Adds the components from src1 to src2 and stores the result in dest.
-  */
-  proc add(src1 : const vec2, src2 : const vec2, dest : vec2) -> void
-}
+[[ name = "vec2" ]]
+type vec2 float[2]
+
+[[ namespace = "vec2", docs = "adds two vec2 into dest" ]]
+proc add(src1 : const(vec2), src2 : const(vec2), dest : vec2) -> void
 
 type add_fn proc(int, int) -> int // typedef int add_fn(int, int)
 ```

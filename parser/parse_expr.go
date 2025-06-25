@@ -54,7 +54,7 @@ func (p *Parser) parseField() (Decl, error) {
 	field := &Field{}
 	err := error(nil)
 
-	// name (: type)? (= value)? (option block)?
+	// name (: type)? (= value)?
 	field.Name, err = p.ParseLookup()
 	if err != nil {
 		return nil, err
@@ -78,61 +78,70 @@ func (p *Parser) parseField() (Decl, error) {
 		}
 	}
 
-	_, err = p.expect(lexer.Token{Tag: lexer.TokenTagWord, Value: "options"})
-	if err == nil {
-		block, err := p.parseOptionBlock()
-		if err != nil {
-			return nil, err
-		}
-
-		field.Options = &block
-	}
-
 	// end of line
 	_, err = p.expect(lexer.Token{Tag: lexer.TokenTagEOL})
 	return field, err
 }
 
-func (p *Parser) parseOptionBlock() (OptionBlock, error) {
-	_, err := p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "{"})
+func (p *Parser) parseAnnotationSection() (Decl, error) {
+	_, err := p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "[["})
 	if err != nil {
-		return OptionBlock{}, err
+		return nil, err
 	}
 
-	// Skip the end of line after "{" if needed
-	_, _ = p.expect(lexer.Token{Tag: lexer.TokenTagEOL})
+	// we want to ignore new lines in this section
+	p.lex.PushGroup()
 
-	options := make([]Option, 0)
+	annotations := make([]*Annotation, 0)
 	for {
-		option := Option{}
-		option.Name, err = p.ParseLookup()
+		name, err := p.ParseLookup()
 		if err != nil {
 			break
 		}
 
 		_, err = p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "="})
 		if err != nil {
-			return OptionBlock{}, err
+			return nil, err
 		}
 
-		option.Value, err = p.ParseExpr()
+		value, err := p.ParseExpr()
 		if err != nil {
-			return OptionBlock{}, err
+			return nil, err
 		}
 
-		_, err = p.expect(lexer.Token{Tag: lexer.TokenTagEOL})
+		annotations = append(annotations, &Annotation{
+			Name:  name,
+			Value: value,
+		})
+
+		_, err = p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: ","})
 		if err != nil {
-			return OptionBlock{}, err
+			break
 		}
-
-		options = append(options, option)
 	}
 
-	_, err = p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "}"})
-	return OptionBlock{Options: options}, err
+	err = p.lex.PopGroup()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "]]"})
+	if err != nil {
+		return nil, err
+	}
+
+	field, err := p.parseField()
+	if err != nil {
+		return nil, err
+	}
+
+	return &AnnotatedDecl{
+		Annotations: annotations,
+		Decl:        field,
+	}, nil
 }
 
-func (p *Parser) parseBlock() (Block, error) {
+func (p *Parser) parseTypeBlock() (Block, error) {
 	_, err := p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "{"})
 	if err != nil {
 		return Block{}, err
@@ -143,14 +152,9 @@ func (p *Parser) parseBlock() (Block, error) {
 
 	decls := make([]Decl, 0)
 	for {
-		_, err = p.expect(lexer.Token{Tag: lexer.TokenTagWord, Value: "options"})
+		annotationSection, err := p.parseAnnotationSection()
 		if err == nil {
-			block, err := p.parseOptionBlock()
-			if err != nil {
-				return Block{}, err
-			}
-
-			decls = append(decls, &block)
+			decls = append(decls, annotationSection)
 			continue
 		}
 
@@ -174,7 +178,7 @@ func (p *Parser) ParseStructDef() (Expr, error) {
 		return nil, err
 	}
 
-	block, err := p.parseBlock()
+	block, err := p.parseTypeBlock()
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +193,7 @@ func (p *Parser) ParseUnionDef() (Expr, error) {
 		return nil, err
 	}
 
-	block, err := p.parseBlock()
+	block, err := p.parseTypeBlock()
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +208,7 @@ func (p *Parser) ParseEnumDef() (Expr, error) {
 		return nil, err
 	}
 
-	block, err := p.parseBlock()
+	block, err := p.parseTypeBlock()
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +271,14 @@ func (p *Parser) ParseGroup() (Expr, error) {
 		return nil, err
 	}
 
+	p.lex.PushGroup()
+
 	expr, err := p.ParseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.lex.PopGroup()
 	if err != nil {
 		return nil, err
 	}
