@@ -12,6 +12,20 @@ type Expr interface {
 	expr()
 }
 
+// Annotation maps from lookup name to a value
+type Annotation struct {
+	Name  Expr
+	Value Expr
+}
+
+// AnnotatedDecl wraps another construct with meta parameters
+type AnnotatedDecl struct {
+	Annotations []*Annotation
+	Decl        Decl
+}
+
+func (aw *AnnotatedDecl) decl() {}
+
 // Literal represents any plain data in text representation
 type Literal struct {
 	Token lexer.Token
@@ -104,35 +118,26 @@ func (fi *Field) decl() {}
 
 // TypeDecl represents a type declaration ("type Name Type" or "proc Name(arg: Type) -> Type")
 type TypeDecl struct {
-	Name          Ident
-	GenericParams []Field
-	Type          Expr
+	Name Expr
+	Type Expr
 }
 
 func (ty *TypeDecl) decl() {}
 
 // ProcDecl represents a type declaration ("proc name(args) -> type")
 type ProcDecl struct {
-	Name          Ident
-	GenericParams []Field
-	Type          Expr
+	Name Expr
+	Type Expr
 }
 
 func (pd *ProcDecl) decl() {}
 
-// Annotation maps from lookup name to a value
-type Annotation struct {
-	Name  Expr
-	Value Expr
+// ModuleDecl represents a module declaration ("module id")
+type ModuleDecl struct {
+	Name Expr
 }
 
-// AnnotatedDecl wraps another construct with meta parameters
-type AnnotatedDecl struct {
-	Annotations []*Annotation
-	Decl        Decl
-}
-
-func (aw *AnnotatedDecl) decl() {}
+func (md *ModuleDecl) decl() {}
 
 // Schema represents the data of an entire schema file
 type Schema struct {

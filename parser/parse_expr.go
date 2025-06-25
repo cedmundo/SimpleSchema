@@ -83,7 +83,7 @@ func (p *Parser) parseField() (Decl, error) {
 	return field, err
 }
 
-func (p *Parser) parseAnnotationSection() (Decl, error) {
+func (p *Parser) parseAnnotations() ([]*Annotation, error) {
 	_, err := p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "[["})
 	if err != nil {
 		return nil, err
@@ -130,6 +130,15 @@ func (p *Parser) parseAnnotationSection() (Decl, error) {
 		return nil, err
 	}
 
+	return annotations, nil
+}
+
+func (p *Parser) ParseAnnotatedField() (Decl, error) {
+	annotations, err := p.parseAnnotations()
+	if err != nil {
+		return nil, err
+	}
+
 	field, err := p.parseField()
 	if err != nil {
 		return nil, err
@@ -152,7 +161,7 @@ func (p *Parser) parseTypeBlock() (Block, error) {
 
 	decls := make([]Decl, 0)
 	for {
-		annotationSection, err := p.parseAnnotationSection()
+		annotationSection, err := p.ParseAnnotatedField()
 		if err == nil {
 			decls = append(decls, annotationSection)
 			continue
@@ -216,27 +225,36 @@ func (p *Parser) ParseEnumDef() (Expr, error) {
 	return &EnumDef{Block: block}, nil
 }
 
-// ParsePrototypeDef tries to parse next expression as proc prototype
-func (p *Parser) ParsePrototypeDef() (Expr, error) {
-	_, err := p.expect(lexer.Token{Tag: lexer.TokenTagWord, Value: "proc"})
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "("})
+// parseArgsWithReturnType parse arguments with return type
+func (p *Parser) parseArgsWithReturnType() (Expr, error) {
+	_, err := p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: "("})
 	if err != nil {
 		return nil, err
 	}
 
 	params := make([]Field, 0)
 	for {
-		param, err := p.ParseIdent()
+		var paramName Expr
+		var paramType Expr
+		paramName, err = p.ParseIdent()
 		if err != nil {
 			break
 		}
 
-		params = append(params, Field{Type: param})
+		_, err = p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: ":"})
+		if err == nil {
+			paramType, err = p.ParseExpr()
+			if err != nil {
+				return nil, err
+			}
+		}
 
+		// in this case the param is only
+		if paramType == nil {
+			params = append(params, Field{Type: paramName})
+		} else {
+			params = append(params, Field{Name: paramName, Type: paramType})
+		}
 		_, err = p.expect(lexer.Token{Tag: lexer.TokenTagPunct, Value: ","})
 		if err != nil {
 			break
@@ -262,6 +280,16 @@ func (p *Parser) ParsePrototypeDef() (Expr, error) {
 		Params:     params,
 		ReturnType: returnType,
 	}, err
+}
+
+// ParsePrototypeDef tries to parse next expression as proc prototype
+func (p *Parser) ParsePrototypeDef() (Expr, error) {
+	_, err := p.expect(lexer.Token{Tag: lexer.TokenTagWord, Value: "proc"})
+	if err != nil {
+		return nil, err
+	}
+
+	return p.parseArgsWithReturnType()
 }
 
 // ParseGroup tries to parse a grouping parenthesis

@@ -54,6 +54,32 @@ func (p *Parser) expect(anyOf ...lexer.Token) (lexer.Token, error) {
 }
 
 // Parse reads the entire file and descends on each rule to make an AST
-func (p *Parser) Parse() error {
-	return nil
+func (p *Parser) Parse() (*Schema, error) {
+	// Skip starting end of lines
+	_, _ = p.expect(lexer.Token{Tag: lexer.TokenTagEOL})
+
+	decls := make([]Decl, 0)
+	for {
+		annotatedDecl, err := p.ParseAnnotatedDecl()
+		if err == nil {
+			decls = append(decls, annotatedDecl)
+			continue
+		}
+
+		decl, err := p.ParseDecl()
+		if err == nil {
+			decls = append(decls, decl)
+			continue
+		}
+
+		break
+	}
+
+	// Skip trailing end of lines and EOF
+	_, _ = p.expect(lexer.Token{Tag: lexer.TokenTagEOL})
+	_, err := p.expect(lexer.Token{Tag: lexer.TokenTagEOF})
+
+	return &Schema{
+		Decls: decls,
+	}, err
 }
