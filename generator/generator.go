@@ -140,10 +140,10 @@ type Prototype struct {
 }
 
 // GeneratePrototype outputs the code for the prototype only (without function body or trailing semicolon)
-func (p *Prototype) GeneratePrototype() string {
+func (p *Prototype) GeneratePrototype(depth int) string {
 	proto := &strings.Builder{}
+	proto.WriteString(makeIndent(depth))
 	proto.WriteString(AttrList(p.Attrs).GenerateList())
-
 	proto.WriteString(p.Type.Generate(0))
 	proto.WriteRune(' ')
 	proto.WriteString(p.Name.Generate(0))
@@ -169,7 +169,82 @@ func (p *PrototypeDecl) decl() {}
 
 // Generate outputs the prototype in the block
 func (p *PrototypeDecl) Generate(depth int) string {
-	return makeIndent(depth) + p.Prototype.GeneratePrototype() + ";"
+	return p.Prototype.GeneratePrototype(depth) + ";"
+}
+
+// Field represents a field within a struct or union
+type Field struct {
+	Attrs []Attr
+	Type  Expr
+	Name  Expr
+}
+
+// Generate outputs the actual field with indentation
+func (f *Field) GenerateField(depth int) string {
+	field := &strings.Builder{}
+	field.WriteString(makeIndent(depth))
+	field.WriteString(AttrList(f.Attrs).GenerateList())
+	field.WriteString(f.Type.Generate(depth))
+	field.WriteRune(' ')
+	field.WriteString(f.Name.Generate(depth))
+	return field.String()
+}
+
+// FieldBlock is a list of fields
+type FieldBlock []Field
+
+// GenerateBlock returns the block wrapped on "{}" containing all fields
+func (fb FieldBlock) GenerateBlock(depth int) string {
+	block := &strings.Builder{}
+	block.WriteRune('{')
+
+	if len(fb) > 0 {
+		block.WriteRune('\n')
+	}
+
+	for _, field := range fb {
+		block.WriteString(field.GenerateField(depth + 1))
+		block.WriteString(";\n")
+	}
+
+	block.WriteString(makeIndent(depth))
+	block.WriteRune('}')
+	return block.String()
+}
+
+// Struct is an expression that can be used as type
+type Struct struct {
+	Attrs  []Attr
+	Name   Expr
+	Fields []Field
+}
+
+func (s *Struct) expr() {}
+
+// Generate returns the equivalent code for a structure with fields
+func (s *Struct) Generate(depth int) string {
+	strct := &strings.Builder{}
+	strct.WriteString(makeIndent(depth))
+	strct.WriteString(AttrList(s.Attrs).GenerateList())
+	strct.WriteString("struct ")
+	if s.Name != nil {
+		strct.WriteString(s.Name.Generate(depth))
+		strct.WriteRune(' ')
+	}
+	strct.WriteString(FieldBlock(s.Fields).GenerateBlock(depth))
+	return strct.String()
+}
+
+// StructDecl represents a struct declaration
+type StructDecl struct {
+	Struct Struct
+}
+
+func (sd *StructDecl) decl() {}
+
+// Generates the struct expr with a trailing semicolon
+func (sd *StructDecl) Generate(depth int) string {
+	return sd.Struct.Generate(depth) + ";"
 }
 
 func makeIndent(depth int) string {
