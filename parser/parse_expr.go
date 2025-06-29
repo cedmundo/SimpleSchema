@@ -130,6 +130,7 @@ func (p *Parser) parseAnnotations() ([]*Annotation, error) {
 		return nil, err
 	}
 
+	_, _ = p.expect(lexer.Token{Tag: lexer.TokenTagEOL})
 	return annotations, nil
 }
 
